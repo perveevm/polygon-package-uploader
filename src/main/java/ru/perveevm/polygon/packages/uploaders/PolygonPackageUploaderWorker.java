@@ -210,11 +210,13 @@ public class PolygonPackageUploaderWorker {
                         .append("}").append(System.lineSeparator());
             }
 
-            logger.logInfo("Uploading generator script");
-            try {
-                session.problemSaveScript(problemId, curTestsetName, generatorScript.toString());
-            } catch (PolygonSessionException e) {
-                throw new PolygonPackageUploaderException("Error happened while uploading generator script", e);
+            if (!generatorScript.toString().isEmpty()) {
+                logger.logInfo("Uploading generator script");
+                try {
+                    session.problemSaveScript(problemId, curTestsetName, generatorScript.toString());
+                } catch (PolygonSessionException e) {
+                    throw new PolygonPackageUploaderException("Error happened while uploading generator script", e);
+                }
             }
 
             for (Map.Entry<Integer, GeneratedTestInfo> testInfo : generatedTestsInfo.entrySet()) {
