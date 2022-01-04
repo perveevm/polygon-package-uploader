@@ -1,6 +1,6 @@
 # Polygon package uploader
 
-Quite often it happens that you have a problem archive with tests, checker, solutions, problem statements etc.
+Quite often it happens that you have a problem archive with tests, checker, solutions, problem statements, etc.
 from some past programming contest held by someoue else, and you want to upload it into Polygon platform for future use.
 
 This utility can help you to reduce routine work of uploading all this stuff into Polygon and do everything for you!
