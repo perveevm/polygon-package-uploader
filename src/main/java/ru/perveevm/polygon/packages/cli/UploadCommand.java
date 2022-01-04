@@ -3,8 +3,11 @@ package ru.perveevm.polygon.packages.cli;
 import picocli.CommandLine;
 import ru.perveevm.polygon.packages.PackageUploader;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
+import ru.perveevm.polygon.packages.uploaders.UploaderProperties;
 
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.prefs.Preferences;
 
@@ -33,7 +36,13 @@ public class UploadCommand implements Callable<Integer> {
             return 1;
         }
 
-        PackageUploader uploader = new PackageUploader(key, secret);
+        Set<UploaderProperties> propertiesSet = new HashSet<>();
+
+        if (arguments.onlyMainCorrect){
+            propertiesSet.add(UploaderProperties.ONLY_MAIN_SOLUTION);
+        }
+
+        PackageUploader uploader = new PackageUploader(key, secret, propertiesSet);
         try {
             if (arguments.fromZip) {
                 uploader.uploadProblemFromZip(arguments.path, arguments.problemId);
@@ -64,5 +73,8 @@ public class UploadCommand implements Callable<Integer> {
 
         @CommandLine.Option(names = {"-d", "--debug"}, description = "Show stacktrace")
         boolean showStacktrace;
+
+        @CommandLine.Option(names = {"-m", "--main"}, description = "Upload only main correct solution")
+        boolean onlyMainCorrect;
     }
 }

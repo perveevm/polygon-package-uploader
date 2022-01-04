@@ -20,10 +20,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -35,11 +32,14 @@ public class PolygonPackageUploaderWorker {
     private final Path packagePath;
     private final int problemId;
     private Element problem;
+    private final Set<UploaderProperties> properties;
 
-    public PolygonPackageUploaderWorker(final PolygonSession session, final Path packagePath, final int problemId) {
+    public PolygonPackageUploaderWorker(final PolygonSession session, final Path packagePath, final int problemId,
+                                        final Set<UploaderProperties> properties) {
         this.session = session;
         this.packagePath = packagePath;
         this.problemId = problemId;
+        this.properties = properties;
     }
 
     public void uploadProblem() throws PolygonPackageUploaderException {
@@ -358,28 +358,31 @@ public class PolygonPackageUploaderWorker {
 
             Path solutionPath = Path.of(packagePath.toString(), sourceNode.getAttribute("path"));
 
-            String tag = solutionNode.getAttribute("tag");
+            SolutionTag tag = switch (solutionNode.getAttribute("tag")) {
+                case "main" -> SolutionTag.MA;
+                case "accepted" -> SolutionTag.OK;
+                case "rejected" -> SolutionTag.RJ;
+                case "wrong-answer" -> SolutionTag.WA;
+                case "memory-limit-exceeded" -> SolutionTag.ML;
+                case "presentation-error" -> SolutionTag.PE;
+                case "time-limit-exceeded" -> SolutionTag.TL;
+                case "time-limit-exceeded-or-memory-limit-exceeded" -> SolutionTag.TM;
+                case "time-limit-exceeded-or-accepted" -> SolutionTag.TO;
+                default -> SolutionTag.NR;
+            };
             String type = sourceNode.getAttribute("type");
             String solutionName = solutionPath.getFileName().toString();
 
             logger.logInfo(String.format("Uploading solution %s of type \"%s\" with tag \"%s\"",
                     solutionName, type, tag));
-
-            try {
-                session.problemSaveSolution(problemId, false, solutionName, solutionPath.toFile(), type, switch (tag) {
-                    case "main" -> SolutionTag.MA;
-                    case "accepted" -> SolutionTag.OK;
-                    case "rejected" -> SolutionTag.RJ;
-                    case "wrong-answer" -> SolutionTag.WA;
-                    case "memory-limit-exceeded" -> SolutionTag.ML;
-                    case "presentation-error" -> SolutionTag.PE;
-                    case "time-limit-exceeded" -> SolutionTag.TL;
-                    case "time-limit-exceeded-or-memory-limit-exceeded" -> SolutionTag.TM;
-                    case "time-limit-exceeded-or-accepted" -> SolutionTag.TO;
-                    default -> SolutionTag.NR;
-                });
-            } catch (PolygonSessionException e) {
-                throw new PolygonPackageUploaderException("Error happened while uploading solutions", e);
+            if (!properties.contains(UploaderProperties.ONLY_MAIN_SOLUTION)
+                    || properties.contains(UploaderProperties.ONLY_MAIN_SOLUTION) && tag == SolutionTag.MA) {
+                try {
+                    session.problemSaveSolution(problemId, false, solutionName, solutionPath.toFile(),
+                            type, tag);
+                } catch (PolygonSessionException e) {
+                    throw new PolygonPackageUploaderException("Error happened while uploading solutions", e);
+                }
             }
         }
     }
