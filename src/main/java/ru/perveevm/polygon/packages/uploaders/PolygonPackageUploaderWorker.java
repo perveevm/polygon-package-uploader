@@ -212,6 +212,7 @@ public class PolygonPackageUploaderWorker {
                             scriptLine.getValue().stream().map(String::valueOf).collect(Collectors.joining(","))
                             + "}";
                 }
+                testsNumber += System.lineSeparator();
                 generatorScript.append(scriptLine.getKey()).append(" > ")
                         .append(testsNumber);
             }
