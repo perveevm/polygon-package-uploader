@@ -204,10 +204,16 @@ public class PolygonPackageUploaderWorker {
             }
 
             for (Map.Entry<String, List<Integer>> scriptLine : testsByScriptLine.entrySet()) {
+                String testsNumber;
+                if (scriptLine.getValue().size() == 1) {
+                    testsNumber = String.valueOf(scriptLine.getValue().get(0));
+                } else {
+                    testsNumber = "{" +
+                            scriptLine.getValue().stream().map(String::valueOf).collect(Collectors.joining(","))
+                            + "}";
+                }
                 generatorScript.append(scriptLine.getKey()).append(" > ")
-                        .append("{")
-                        .append(scriptLine.getValue().stream().map(String::valueOf).collect(Collectors.joining(",")))
-                        .append("}").append(System.lineSeparator());
+                        .append(testsNumber);
             }
 
             if (!generatorScript.toString().isEmpty()) {
