@@ -5,7 +5,6 @@ import ru.perveevm.polygon.exceptions.api.PolygonSessionException;
 import ru.perveevm.polygon.exceptions.user.PolygonUserSessionException;
 import ru.perveevm.polygon.packages.ConsoleLogger;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
-import ru.perveevm.polygon.packages.workers.PolygonPackageUploaderWorker;
 import ru.perveevm.polygon.user.PolygonUserSession;
 
 import java.nio.file.Path;
@@ -77,9 +76,24 @@ public class AdvancedPackageUploader {
     }
 
     public void uploadProblem(final Path packagePath, final String problemName) throws PolygonPackageUploaderException {
-        int problemId = createProblem(problemName);
-        uploader.uploadProblem(packagePath, problemId);
-        commitAndPackage(problemId);
+        if (session == null) {
+            throw new IllegalStateException("Trying to create problem when PolygonUserSession is null");
+        }
+
+        int problemId = -1;
+        try {
+            problemId = createProblem(problemName);
+            uploader.uploadProblem(packagePath, problemId);
+            commitAndPackage(problemId);
+        } catch (PolygonPackageUploaderException e) {
+            try {
+                session.problemDelete(problemId);
+            } catch (PolygonUserSessionException ex) {
+                throw new PolygonPackageUploaderException("Couldn't delete failed problem", ex);
+            }
+
+            throw e;
+        }
     }
 
     public void uploadProblem(final Path packagePath, final int problemId) throws PolygonPackageUploaderException {

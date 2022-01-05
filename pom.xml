@@ -6,7 +6,7 @@
 
     <groupId>ru.perveevm.polygon</groupId>
     <artifactId>polygon-package-uploader</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
 
     <repositories>
         <repository>
