@@ -1,9 +1,10 @@
 package ru.perveevm.polygon.packages.cli;
 
 import picocli.CommandLine;
-import ru.perveevm.polygon.packages.PackageUploader;
+import ru.perveevm.polygon.packages.uploaders.AdvancedPackageUploader;
+import ru.perveevm.polygon.packages.uploaders.PackageUploader;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
-import ru.perveevm.polygon.packages.uploaders.UploaderProperties;
+import ru.perveevm.polygon.packages.workers.UploaderProperties;
 
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -29,6 +30,11 @@ public class UploadCommand implements Callable<Integer> {
             return 1;
         }
 
+        if (arguments.isInvalid()) {
+            System.out.println("Either none of problemId and problem name are not given or both are in args");
+            return 3;
+        }
+
         String key = preferences.get("key", null);
         String secret = preferences.get("secret", null);
         if (key == null || secret == null) {
@@ -38,16 +44,31 @@ public class UploadCommand implements Callable<Integer> {
 
         Set<UploaderProperties> propertiesSet = new HashSet<>();
 
-        if (arguments.onlyMainCorrect){
+        if (arguments.onlyMainCorrect) {
             propertiesSet.add(UploaderProperties.ONLY_MAIN_SOLUTION);
         }
 
-        PackageUploader uploader = new PackageUploader(key, secret, propertiesSet);
+        if (arguments.fromZip) {
+            propertiesSet.add(UploaderProperties.ZIP_ARCHIVE);
+        }
+
+        PackageUploader basicUploader = new PackageUploader(key, secret, propertiesSet);
         try {
-            if (arguments.fromZip) {
-                uploader.uploadProblemFromZip(arguments.path, arguments.problemId);
-            } else {
-                uploader.uploadProblem(arguments.path, arguments.problemId);
+            if (arguments.newProblemName != null) {
+                String password = preferences.get("password", null);
+                String login = preferences.get("login", null);
+
+                if (login == null || password == null) {
+                    System.out.println("There are no saved Polygon credentials for you. Please, call init command first");
+                    return 1;
+                }
+
+                AdvancedPackageUploader uploader = new AdvancedPackageUploader(login, password, basicUploader);
+
+                uploader.uploadProblem(arguments.path, arguments.newProblemName);
+            }
+            else {
+                basicUploader.uploadProblem(arguments.path, arguments.problemId);
             }
         } catch (PolygonPackageUploaderException e) {
             System.out.println(e.getMessage());
@@ -56,13 +77,12 @@ public class UploadCommand implements Callable<Integer> {
             }
             return 2;
         }
-
         return 0;
     }
 
     static class UploadCommandArguments {
-        @CommandLine.Option(names = {"-i", "--problem-id"}, required = true, description = "Problem ID in Polygon")
-        int problemId;
+        @CommandLine.Option(names = {"-i", "--problem-id"}, description = "Problem ID in Polygon")
+        Integer problemId;
 
         @CommandLine.Option(names = {"-p", "--path"}, required = true,
                 description = "Path to the problem directory or problem archive")
@@ -76,5 +96,18 @@ public class UploadCommand implements Callable<Integer> {
 
         @CommandLine.Option(names = {"-m", "--main"}, description = "Upload only main correct solution")
         boolean onlyMainCorrect;
+
+        @CommandLine.Option(names = {"-n", "--new"}, description = "Create new problem with given name")
+        String newProblemName;
+
+        boolean isInvalid() {
+            if (problemId == null && newProblemName == null) {
+                return true;
+            }
+            if (problemId != null && newProblemName != null) {
+                return true;
+            }
+            return false;
+        }
     }
 }

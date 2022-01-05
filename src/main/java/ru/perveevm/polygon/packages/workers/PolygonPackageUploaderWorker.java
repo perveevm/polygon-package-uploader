@@ -1,4 +1,4 @@
-package ru.perveevm.polygon.packages.uploaders;
+package ru.perveevm.polygon.packages.workers;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -9,7 +9,7 @@ import ru.perveevm.polygon.api.PolygonSession;
 import ru.perveevm.polygon.api.entities.enums.SolutionTag;
 import ru.perveevm.polygon.api.entities.enums.TestGroupFeedbackPolicy;
 import ru.perveevm.polygon.api.entities.enums.TestGroupPointsPolicy;
-import ru.perveevm.polygon.api.exceptions.PolygonSessionException;
+import ru.perveevm.polygon.exceptions.api.PolygonSessionException;
 import ru.perveevm.polygon.packages.ConsoleLogger;
 import ru.perveevm.polygon.packages.GeneratedTestInfo;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;

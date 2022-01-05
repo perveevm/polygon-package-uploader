@@ -11,13 +11,22 @@ import java.util.prefs.Preferences;
 @CommandLine.Command(name = "init", description = "Saves Polygon API credentials for further use")
 public class InitCommand implements Callable<Integer> {
     @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
-    InitCommandArguments arguments;
+    InitCommandArguments apiArguments;
+
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
+    PolygonLoginArguments loginArguments;
 
     @Override
     public Integer call() {
         Preferences preferences = Preferences.userRoot().node("ru.perveevm.polygon.packages.api-credentials");
-        preferences.put("key", arguments.key);
-        preferences.put("secret", arguments.secret);
+        preferences.put("key", apiArguments.key);
+        preferences.put("secret", apiArguments.secret);
+
+        if (loginArguments.login != null) {
+            preferences.put("login", loginArguments.login);
+            preferences.put("password", loginArguments.password);
+        }
+
         return 0;
     }
 
@@ -29,5 +38,15 @@ public class InitCommand implements Callable<Integer> {
         @CommandLine.Option(names = {"-s", "--secret"}, required = true, interactive = true, arity = "0..1",
                 description = "API secret")
         String secret;
+    }
+
+    static class PolygonLoginArguments {
+        @CommandLine.Option(names = {"-l", "--login"}, required = true, interactive = true, arity = "0..1",
+                description = "Polygon login (not email) for unsupported API actions (unnecessary)")
+        String login;
+
+        @CommandLine.Option(names = {"-p", "--password"}, required = true, interactive = true, arity = "0..1",
+                description = "Polygon password for unsupported API actions (unnecessary)")
+        String password;
     }
 }

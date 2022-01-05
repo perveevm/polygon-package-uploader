@@ -1,10 +1,10 @@
-package ru.perveevm.polygon.packages;
+package ru.perveevm.polygon.packages.uploaders;
 
 import net.lingala.zip4j.ZipFile;
 import ru.perveevm.polygon.api.PolygonSession;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
-import ru.perveevm.polygon.packages.uploaders.PolygonPackageUploaderWorker;
-import ru.perveevm.polygon.packages.uploaders.UploaderProperties;
+import ru.perveevm.polygon.packages.workers.PolygonPackageUploaderWorker;
+import ru.perveevm.polygon.packages.workers.UploaderProperties;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,11 +24,14 @@ public class PackageUploader {
     }
 
     public void uploadProblem(final Path packagePath, final int problemId) throws PolygonPackageUploaderException {
-        new PolygonPackageUploaderWorker(session, packagePath, problemId, properties).uploadProblem();
+        Path realPath = packagePath;
+        if (properties.contains(UploaderProperties.ZIP_ARCHIVE)) {
+           realPath = unZipArchive(packagePath);
+        }
+        new PolygonPackageUploaderWorker(session, realPath, problemId, properties).uploadProblem();
     }
 
-    public void uploadProblemFromZip(final Path packageArchivePath, final int problemId)
-            throws PolygonPackageUploaderException {
+    private Path unZipArchive(final Path packageArchivePath) throws PolygonPackageUploaderException {
         Path tempPath;
         try {
             tempPath = Files.createTempDirectory("polygon-uploader");
@@ -44,6 +47,10 @@ public class PackageUploader {
             throw new PolygonPackageUploaderException("Couldn't extract an archive", e);
         }
 
-        uploadProblem(tempPath, problemId);
+        return tempPath;
+    }
+
+    public PolygonSession getSession() {
+        return session;
     }
 }
