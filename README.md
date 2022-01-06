@@ -7,11 +7,13 @@ This utility can help you to reduce routine work of uploading all this stuff int
 
 ## Build
 
-Use `mvn package` to build an executable `.jar` file.
+Use `install.sh` to install the utility. It will save path to jar directory, build `.jar` file and save the newest version of the utility.
+All config files fill be located at `~/polygon-package-uploader`. It also will create a symlink in `/usr/local/bin` to `upload.sh` script.
 
 ## Usage
 
-Use `java -jar polygon-package-uploader-VERSION.jar --help` to show an informative help message.
+Use `polygon-uploader` (the name of created symlink) to run the script. There are two modes for now: `polygon-uploader init` and `polygon-uploader upload`.
+Call them to see an informative help message.
 
 ## Currently supported problem archive types
 
