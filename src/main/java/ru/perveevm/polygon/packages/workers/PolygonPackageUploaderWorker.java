@@ -1,11 +1,13 @@
 package ru.perveevm.polygon.packages.workers;
 
+import com.google.gson.Gson;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import ru.perveevm.polygon.api.PolygonSession;
+import ru.perveevm.polygon.api.entities.Statement;
 import ru.perveevm.polygon.api.entities.enums.SolutionTag;
 import ru.perveevm.polygon.api.entities.enums.TestGroupFeedbackPolicy;
 import ru.perveevm.polygon.api.entities.enums.TestGroupPointsPolicy;
@@ -17,7 +19,10 @@ import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -427,37 +432,78 @@ public class PolygonPackageUploaderWorker {
         logger.logBeginStage("UPLOADING STATEMENTS");
 
         Path statementSectionsPath = Path.of(packagePath.toString(), "statement-sections");
-        if (!Files.exists(statementSectionsPath)) {
+        Path statementsPath = Path.of(packagePath.toString(), "statements");
+        if (!Files.exists(statementSectionsPath) && !Files.exists(statementsPath)) {
             return;
         }
 
-        try {
-            List<Exception> exceptions = new ArrayList<>();
-            Files.list(statementSectionsPath).forEach(path -> {
-                String language = path.getFileName().toString();
-                logger.logInfo(String.format("Uploading %s statements", language));
+        if (Files.exists(statementSectionsPath)) {
+            try {
+                List<Exception> exceptions = new ArrayList<>();
+                Files.list(statementSectionsPath).forEach(path -> {
+                    String language = path.getFileName().toString();
+                    logger.logInfo(String.format("Uploading %s statements", language));
 
-                try {
-                    String name = readFileContent(Path.of(path.toString(), "name.tex"));
-                    String legend = readFileContent(Path.of(path.toString(), "legend.tex"));
-                    String input = readFileContent(Path.of(path.toString(), "input.tex"));
-                    String output = readFileContent(Path.of(path.toString(), "output.tex"));
-                    String scoring = readFileContent(Path.of(path.toString(), "scoring.tex"));
-                    String notes = readFileContent(Path.of(path.toString(), "notes.tex"));
-                    String tutorial = readFileContent(Path.of(path.toString(), "tutorial.tex"));
-                    session.problemSaveStatement(problemId, language, "utf-8", name, legend, input, output,
-                            scoring, notes, tutorial);
-                } catch (PolygonSessionException | PolygonPackageUploaderException e) {
-                    exceptions.add(e);
+                    try {
+                        String name = readFileContent(Path.of(path.toString(), "name.tex"));
+                        String legend = readFileContent(Path.of(path.toString(), "legend.tex"));
+                        String input = readFileContent(Path.of(path.toString(), "input.tex"));
+                        String output = readFileContent(Path.of(path.toString(), "output.tex"));
+                        String scoring = readFileContent(Path.of(path.toString(), "scoring.tex"));
+                        String notes = readFileContent(Path.of(path.toString(), "notes.tex"));
+                        String tutorial = readFileContent(Path.of(path.toString(), "tutorial.tex"));
+                        session.problemSaveStatement(problemId, language, "utf-8", name, legend, input, output,
+                                scoring, notes, tutorial);
+                    } catch (PolygonSessionException | PolygonPackageUploaderException e) {
+                        exceptions.add(e);
+                    }
+                });
+
+                if (!exceptions.isEmpty()) {
+                    throw new PolygonPackageUploaderException("Error happened while uploading statements",
+                            exceptions.get(0));
                 }
-            });
-
-            if (!exceptions.isEmpty()) {
-                throw new PolygonPackageUploaderException("Error happened while uploading statements",
-                        exceptions.get(0));
+            } catch (IOException e) {
+                throw new PolygonPackageUploaderException("Error happened while parsing statement sections", e);
             }
-        } catch (IOException e) {
-            throw new PolygonPackageUploaderException("Error happened while parsing statement sections", e);
+        } else {
+            try {
+                List<Exception> exceptions = new ArrayList<>();
+                Files.list(statementsPath).forEach(path -> {
+                    if (!Files.exists(Path.of(path.toString(), "problem-properties.json"))) {
+                        return;
+                    }
+
+                    String language = path.getFileName().toString();
+                    logger.logInfo(String.format("Uploading %s statements", language));
+
+                    Gson gson = new Gson();
+                    StringBuilder sb = new StringBuilder();
+                    try (BufferedReader reader = Files.newBufferedReader(Path.of(path.toString(),
+                            "problem-properties.json"))) {
+                        sb.append(reader.lines().collect(Collectors.joining(System.lineSeparator())));
+                    } catch (IOException e) {
+                        exceptions.add(e);
+                        return;
+                    }
+
+                    try {
+                        Statement statement = gson.fromJson(sb.toString(), Statement.class);
+                        session.problemSaveStatement(problemId, language, "utf-8", statement.getName(),
+                                statement.getLegend(), statement.getInput(), statement.getOutput(),
+                                statement.getScoring(), statement.getNotes(), statement.getTutorial());
+                    } catch (Exception e) {
+                        exceptions.add(e);
+                    }
+                });
+
+                if (!exceptions.isEmpty()) {
+                    throw new PolygonPackageUploaderException("Error happened while uploading statements",
+                            exceptions.get(0));
+                }
+            } catch (IOException e) {
+                throw new PolygonPackageUploaderException("Error happened while parsing statements", e);
+            }
         }
     }
 
