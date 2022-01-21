@@ -85,6 +85,10 @@ public class PolygonPackageUploaderWorker {
         logger.logBeginStage("UPLOADING EXECUTABLES");
 
         Element filesNode = (Element) problem.getElementsByTagName("files").item(0);
+        if (filesNode.getElementsByTagName("executables").getLength() == 0) {
+            return;
+        }
+
         Element executablesNode = (Element) filesNode.getElementsByTagName("executables").item(0);
         NodeList allExecutables = executablesNode.getElementsByTagName("executable");
         for (int i = 0; i < allExecutables.getLength(); i++) {
