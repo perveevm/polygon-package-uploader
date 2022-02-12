@@ -275,10 +275,13 @@ public class PolygonPackageUploaderWorker {
                 String feedbackPolicyString = curGroup.getAttributes().getNamedItem("feedback-policy").getTextContent();
                 String pointsPolicyString = curGroup.getAttributes().getNamedItem("points-policy").getTextContent();
 
-                TestGroupPointsPolicy pointsPolicy = switch (pointsPolicyString) {
-                    case "complete-group" -> TestGroupPointsPolicy.COMPLETE_GROUP;
-                    default -> TestGroupPointsPolicy.EACH_TEST;
-                };
+                TestGroupPointsPolicy pointsPolicy;
+                if (pointsPolicyString.equals("complete-group")) {
+                    pointsPolicy = TestGroupPointsPolicy.COMPLETE_GROUP;
+                } else {
+                    pointsPolicy = TestGroupPointsPolicy.EACH_TEST;
+                }
+                
                 TestGroupFeedbackPolicy feedbackPolicy = switch (feedbackPolicyString) {
                     case "complete" -> TestGroupFeedbackPolicy.COMPLETE;
                     case "icpc" -> TestGroupFeedbackPolicy.ICPC;
@@ -545,7 +548,7 @@ public class PolygonPackageUploaderWorker {
 
     private Document getXMLDocument(final Path packagePath) throws PolygonPackageUploaderException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(true);
+        factory.setValidating(false);
         factory.setIgnoringElementContentWhitespace(true);
 
         try {

@@ -13,7 +13,7 @@ then
 fi
 
 UPLOADER_PATH=$(cat ~/.polygon-package-uploader/uploader_path)
-UPLOADER_VERSION=$(cat ~/.polygon-package-uploader/uploader_version)
+UPLOADER_VERSION=$(ls ${UPLOADER_PATH}/target | grep -e polygon-package-uploader | sort | tail -1)
 
 if [ "$1" = "init" ]
 then
