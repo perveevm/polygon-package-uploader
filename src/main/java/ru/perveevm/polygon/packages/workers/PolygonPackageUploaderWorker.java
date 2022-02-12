@@ -281,7 +281,7 @@ public class PolygonPackageUploaderWorker {
                 } else {
                     pointsPolicy = TestGroupPointsPolicy.EACH_TEST;
                 }
-                
+
                 TestGroupFeedbackPolicy feedbackPolicy = switch (feedbackPolicyString) {
                     case "complete" -> TestGroupFeedbackPolicy.COMPLETE;
                     case "icpc" -> TestGroupFeedbackPolicy.ICPC;
