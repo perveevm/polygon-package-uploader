@@ -2,7 +2,10 @@ package ru.perveevm.polygon.packages.uploaders;
 
 import net.lingala.zip4j.ZipFile;
 import ru.perveevm.polygon.api.PolygonSession;
+import ru.perveevm.polygon.packages.PackageType;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
+import ru.perveevm.polygon.packages.workers.PackageUploaderWorker;
+import ru.perveevm.polygon.packages.workers.PackageUploaderWorkerFactory;
 import ru.perveevm.polygon.packages.workers.PolygonPackageUploaderWorker;
 import ru.perveevm.polygon.packages.workers.UploaderProperties;
 
@@ -17,10 +20,13 @@ import java.util.Set;
 public class PackageUploader {
     private final PolygonSession session;
     private final Set<UploaderProperties> properties;
+    private final PackageType packageType;
 
-    public PackageUploader(final String key, final String secret, final Set<UploaderProperties> properties) {
+    public PackageUploader(final String key, final String secret, final Set<UploaderProperties> properties,
+                           final PackageType packageType) {
         session = new PolygonSession(key, secret);
         this.properties = properties;
+        this.packageType = packageType;
     }
 
     public void uploadProblem(final Path packagePath, final int problemId) throws PolygonPackageUploaderException {
@@ -28,7 +34,10 @@ public class PackageUploader {
         if (properties.contains(UploaderProperties.ZIP_ARCHIVE)) {
            realPath = unZipArchive(packagePath);
         }
-        new PolygonPackageUploaderWorker(session, realPath, problemId, properties).uploadProblem();
+
+        PackageUploaderWorker worker = PackageUploaderWorkerFactory.newPackageUploaderWorker(packageType, session,
+                realPath, problemId, properties);
+        worker.uploadProblem();
     }
 
     private Path unZipArchive(final Path packageArchivePath) throws PolygonPackageUploaderException {

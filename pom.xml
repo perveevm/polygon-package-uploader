@@ -6,7 +6,7 @@
 
     <groupId>ru.perveevm.polygon</groupId>
     <artifactId>polygon-package-uploader</artifactId>
-    <version>0.6</version>
+    <version>0.7</version>
 
     <repositories>
         <repository>
@@ -40,6 +40,13 @@
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.6.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/de.vandermeer/asciitable -->
+        <dependency>
+            <groupId>de.vandermeer</groupId>
+            <artifactId>asciitable</artifactId>
+            <version>0.3.2</version>
         </dependency>
     </dependencies>
 

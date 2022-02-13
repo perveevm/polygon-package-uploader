@@ -1,6 +1,7 @@
 package ru.perveevm.polygon.packages.cli;
 
 import picocli.CommandLine;
+import ru.perveevm.polygon.packages.PackageType;
 import ru.perveevm.polygon.packages.uploaders.AdvancedPackageUploader;
 import ru.perveevm.polygon.packages.uploaders.PackageUploader;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
@@ -43,16 +44,28 @@ public class UploadCommand implements Callable<Integer> {
         }
 
         Set<UploaderProperties> propertiesSet = new HashSet<>();
-
         if (arguments.onlyMainCorrect) {
             propertiesSet.add(UploaderProperties.ONLY_MAIN_SOLUTION);
         }
-
         if (arguments.fromZip) {
             propertiesSet.add(UploaderProperties.ZIP_ARCHIVE);
         }
 
-        PackageUploader basicUploader = new PackageUploader(key, secret, propertiesSet);
+        PackageType packageType;
+        if (arguments.archiveType == null) {
+            packageType = PackageType.POLYGON;
+        } else {
+            if (arguments.archiveType.equals("polygon")) {
+                packageType = PackageType.POLYGON;
+            } else if (arguments.archiveType.equals("pcms")) {
+                packageType = PackageType.PCMS;
+            } else {
+                System.out.printf("Unsupported package type: %s%n", arguments.archiveType);
+                return 3;
+            }
+        }
+
+        PackageUploader basicUploader = new PackageUploader(key, secret, propertiesSet, packageType);
         try {
             if (arguments.newProblemName != null) {
                 String password = preferences.get("password", null);
@@ -99,6 +112,9 @@ public class UploadCommand implements Callable<Integer> {
 
         @CommandLine.Option(names = {"-n", "--new"}, description = "Create new problem with given name")
         String newProblemName;
+
+        @CommandLine.Option(names = {"-t", "--type"}, description = "Denotes a type of an archive. Supported values: polygon, pcms")
+        String archiveType;
 
         boolean isInvalid() {
             if (problemId == null && newProblemName == null) {

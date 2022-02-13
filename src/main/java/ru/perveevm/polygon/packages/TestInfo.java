@@ -3,12 +3,12 @@ package ru.perveevm.polygon.packages;
 /**
  * @author Perveev Mike (perveev_m@mail.ru)
  */
-public class GeneratedTestInfo {
+public class TestInfo {
     private final Double points;
     private final String group;
     private final boolean isSample;
 
-    public GeneratedTestInfo(final Double points, final String group, final boolean isSample) {
+    public TestInfo(final Double points, final String group, final boolean isSample) {
         this.points = points;
         this.group = group;
         this.isSample = isSample;

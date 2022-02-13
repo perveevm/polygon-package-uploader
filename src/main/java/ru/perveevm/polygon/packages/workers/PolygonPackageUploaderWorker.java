@@ -1,28 +1,18 @@
 package ru.perveevm.polygon.packages.workers;
 
-import com.google.gson.Gson;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 import ru.perveevm.polygon.api.PolygonSession;
-import ru.perveevm.polygon.api.entities.Statement;
 import ru.perveevm.polygon.api.entities.enums.SolutionTag;
 import ru.perveevm.polygon.api.entities.enums.TestGroupFeedbackPolicy;
 import ru.perveevm.polygon.api.entities.enums.TestGroupPointsPolicy;
 import ru.perveevm.polygon.exceptions.api.PolygonSessionException;
-import ru.perveevm.polygon.packages.ConsoleLogger;
-import ru.perveevm.polygon.packages.GeneratedTestInfo;
+import ru.perveevm.polygon.packages.TestInfo;
 import ru.perveevm.polygon.packages.exceptions.PolygonPackageUploaderException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -31,26 +21,19 @@ import java.util.stream.Collectors;
 /**
  * @author Perveev Mike (perveev_m@mail.ru)
  */
-public class PolygonPackageUploaderWorker {
-    private final PolygonSession session;
-    private final ConsoleLogger logger = new ConsoleLogger(this.getClass().getName());
-    private final Path packagePath;
-    private final int problemId;
+public class PolygonPackageUploaderWorker extends AbstractPackageUploaderWorker {
     private Element problem;
-    private final Set<UploaderProperties> properties;
 
     public PolygonPackageUploaderWorker(final PolygonSession session, final Path packagePath, final int problemId,
                                         final Set<UploaderProperties> properties) {
-        this.session = session;
-        this.packagePath = packagePath;
-        this.problemId = problemId;
-        this.properties = properties;
+        super(session, packagePath, problemId, properties);
     }
 
+    @Override
     public void uploadProblem() throws PolygonPackageUploaderException {
         logger.logBeginStage("PARSING PROBLEM.XML FILE");
 
-        Document document = getXMLDocument(packagePath);
+        Document document = getXMLDocument(packagePath, "problem.xml");
         problem = (Element) document.getElementsByTagName("problem").item(0);
         uploadTags();
         uploadResources();
@@ -153,9 +136,8 @@ public class PolygonPackageUploaderWorker {
             Element testsNode = (Element) ((Element) curTestset).getElementsByTagName("tests").item(0);
             NodeList allTests = testsNode.getElementsByTagName("test");
 
-            StringBuilder generatorScript = new StringBuilder();
             Map<String, List<Integer>> testsByScriptLine = new HashMap<>();
-            Map<Integer, GeneratedTestInfo> generatedTestsInfo = new HashMap<>();
+            Map<Integer, TestInfo> generatedTestsInfo = new HashMap<>();
             for (int j = 0; j < allTests.getLength(); j++) {
                 Node curTest = allTests.item(j);
                 String method = curTest.getAttributes().getNamedItem("method").getTextContent();
@@ -208,34 +190,21 @@ public class PolygonPackageUploaderWorker {
                     String cmd = curTest.getAttributes().getNamedItem("cmd").getTextContent();
                     testsByScriptLine.putIfAbsent(cmd, new ArrayList<>());
                     testsByScriptLine.get(cmd).add(j + 1);
-                    generatedTestsInfo.put(j + 1, new GeneratedTestInfo(points, group, isSample));
+                    generatedTestsInfo.put(j + 1, new TestInfo(points, group, isSample));
                 }
             }
 
-            for (Map.Entry<String, List<Integer>> scriptLine : testsByScriptLine.entrySet()) {
-                String testsNumber;
-                if (scriptLine.getValue().size() == 1) {
-                    testsNumber = String.valueOf(scriptLine.getValue().get(0));
-                } else {
-                    testsNumber = "{" +
-                            scriptLine.getValue().stream().map(String::valueOf).collect(Collectors.joining(","))
-                            + "}";
-                }
-                testsNumber += System.lineSeparator();
-                generatorScript.append(scriptLine.getKey()).append(" > ")
-                        .append(testsNumber);
-            }
-
-            if (!generatorScript.toString().isEmpty()) {
+            String generatorScript = getGeneratorScript(testsByScriptLine);
+            if (!generatorScript.isEmpty()) {
                 logger.logInfo("Uploading generator script");
                 try {
-                    session.problemSaveScript(problemId, curTestsetName, generatorScript.toString());
+                    session.problemSaveScript(problemId, curTestsetName, generatorScript);
                 } catch (PolygonSessionException e) {
                     throw new PolygonPackageUploaderException("Error happened while uploading generator script", e);
                 }
             }
 
-            for (Map.Entry<Integer, GeneratedTestInfo> testInfo : generatedTestsInfo.entrySet()) {
+            for (Map.Entry<Integer, TestInfo> testInfo : generatedTestsInfo.entrySet()) {
                 logger.logInfo(String.format("Updating generated test #%d data", testInfo.getKey()));
 
                 try {
@@ -474,43 +443,7 @@ public class PolygonPackageUploaderWorker {
                 throw new PolygonPackageUploaderException("Error happened while parsing statement sections", e);
             }
         } else {
-            try {
-                List<Exception> exceptions = new ArrayList<>();
-                Files.list(statementsPath).forEach(path -> {
-                    if (!Files.exists(Path.of(path.toString(), "problem-properties.json"))) {
-                        return;
-                    }
-
-                    String language = path.getFileName().toString();
-                    logger.logInfo(String.format("Uploading %s statements", language));
-
-                    Gson gson = new Gson();
-                    StringBuilder sb = new StringBuilder();
-                    try (BufferedReader reader = Files.newBufferedReader(Path.of(path.toString(),
-                            "problem-properties.json"))) {
-                        sb.append(reader.lines().collect(Collectors.joining(System.lineSeparator())));
-                    } catch (IOException e) {
-                        exceptions.add(e);
-                        return;
-                    }
-
-                    try {
-                        Statement statement = gson.fromJson(sb.toString(), Statement.class);
-                        session.problemSaveStatement(problemId, language, "utf-8", statement.getName(),
-                                statement.getLegend(), statement.getInput(), statement.getOutput(),
-                                statement.getScoring(), statement.getNotes(), statement.getTutorial());
-                    } catch (Exception e) {
-                        exceptions.add(e);
-                    }
-                });
-
-                if (!exceptions.isEmpty()) {
-                    throw new PolygonPackageUploaderException("Error happened while uploading statements",
-                            exceptions.get(0));
-                }
-            } catch (IOException e) {
-                throw new PolygonPackageUploaderException("Error happened while parsing statements", e);
-            }
+            uploadStatementsFromDirectory(statementsPath);
         }
     }
 
@@ -543,19 +476,6 @@ public class PolygonPackageUploaderWorker {
             return Files.readAllLines(path).stream().collect(Collectors.joining(System.lineSeparator()));
         } catch (IOException e) {
             throw new PolygonPackageUploaderException(String.format("Error happened while reading file %s", path), e);
-        }
-    }
-
-    private Document getXMLDocument(final Path packagePath) throws PolygonPackageUploaderException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(false);
-        factory.setIgnoringElementContentWhitespace(true);
-
-        try {
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            return builder.parse(Path.of(packagePath.toString(), "problem.xml").toFile());
-        } catch (ParserConfigurationException | IOException | SAXException e) {
-            throw new PolygonPackageUploaderException("Error happened while parsing problem.xml config file", e);
         }
     }
 }
