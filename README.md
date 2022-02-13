@@ -18,6 +18,7 @@ Call them to see an informative help message.
 ## Currently supported problem archive types
 
 - Polygon archive
+- PCMS2 archive in semi-automatic mode (without interactive problems for now)
 - To be continued...
 
 ## Authors
