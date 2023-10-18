@@ -36,8 +36,8 @@ public class AdvancedPackageUploader {
         }
 
         try {
-            session.problemCreate(problemName);
-        } catch (PolygonUserSessionException e) {
+            uploader.getSession().problemCreate(problemName);
+        } catch (PolygonSessionException e) {
             throw new PolygonPackageUploaderException(
                     "Error happened while creating new problem %s".formatted(problemName), e);
         }
@@ -66,10 +66,10 @@ public class AdvancedPackageUploader {
 
         logger.logBeginStage("COMMITTING PROBLEM");
         try {
-            session.problemCommit(problemId);
+            uploader.getSession().problemCommitChanges(problemId, true, null);
             logger.logBeginStage("BUILDING PACKAGE");
-            session.problemBuildPackage(problemId, true, true);
-        } catch (PolygonUserSessionException e) {
+            uploader.getSession().problemBuildPackage(problemId, true, true);
+        } catch (PolygonSessionException e) {
             throw new PolygonPackageUploaderException(
                     "Error happened while committing and packaging new problem %d".formatted(problemId), e);
         }

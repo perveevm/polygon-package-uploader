@@ -98,7 +98,8 @@ public abstract class AbstractPackageUploaderWorker implements PackageUploaderWo
                     Statement statement = gson.fromJson(sb.toString(), Statement.class);
                     session.problemSaveStatement(problemId, language, "utf-8", statement.getName(),
                             statement.getLegend(), statement.getInput(), statement.getOutput(),
-                            statement.getScoring(), statement.getNotes(), statement.getTutorial());
+                            statement.getScoring(), statement.getInteraction(), statement.getNotes(),
+                            statement.getTutorial());
                 } catch (Exception e) {
                     exceptions.add(e);
                 }

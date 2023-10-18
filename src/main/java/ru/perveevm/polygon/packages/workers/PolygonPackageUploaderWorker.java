@@ -426,10 +426,11 @@ public class PolygonPackageUploaderWorker extends AbstractPackageUploaderWorker 
                         String input = readFileContent(Path.of(path.toString(), "input.tex"));
                         String output = readFileContent(Path.of(path.toString(), "output.tex"));
                         String scoring = readFileContent(Path.of(path.toString(), "scoring.tex"));
+                        String interaction = readFileContent(Path.of(path.toString(), "interaction.tex"));
                         String notes = readFileContent(Path.of(path.toString(), "notes.tex"));
                         String tutorial = readFileContent(Path.of(path.toString(), "tutorial.tex"));
                         session.problemSaveStatement(problemId, language, "utf-8", name, legend, input, output,
-                                scoring, notes, tutorial);
+                                scoring, interaction, notes, tutorial);
                     } catch (PolygonSessionException | PolygonPackageUploaderException e) {
                         exceptions.add(e);
                     }

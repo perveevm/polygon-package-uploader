@@ -6,7 +6,7 @@
 
     <groupId>ru.perveevm.polygon</groupId>
     <artifactId>polygon-package-uploader</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
 
     <repositories>
         <repository>
@@ -23,9 +23,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.perveevm</groupId>
+            <groupId>ru.perveevm</groupId>
             <artifactId>polygon-api</artifactId>
-            <version>61b8484a4af7b8d979894cfa470a21989584973e</version>
+            <version>1.2.2</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/net.lingala.zip4j/zip4j -->
