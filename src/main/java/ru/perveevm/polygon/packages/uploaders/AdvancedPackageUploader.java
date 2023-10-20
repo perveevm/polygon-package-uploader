@@ -31,28 +31,8 @@ public class AdvancedPackageUploader {
     private int createProblem(final String problemName) throws PolygonPackageUploaderException {
         logger.logBeginStage("CREATING PROBLEM");
 
-        if (session == null) {
-            throw new IllegalStateException("Trying to create problem when PolygonUserSession is null");
-        }
-
         try {
-            uploader.getSession().problemCreate(problemName);
-        } catch (PolygonSessionException e) {
-            throw new PolygonPackageUploaderException(
-                    "Error happened while creating new problem %s".formatted(problemName), e);
-        }
-
-        try {
-            Problem[] problems = uploader.getSession().problemsList(false, null, problemName, login);
-            if (problems.length == 0) {
-                throw new PolygonPackageUploaderException(
-                        "Cannot find created problem with name %s".formatted(problemName));
-            }
-            if (problems.length > 1) {
-                throw new PolygonPackageUploaderException(
-                        "Multiple problems found with name %s".formatted(problemName));
-            }
-            return problems[0].getId();
+            return uploader.getSession().problemCreate(problemName).getId();
         } catch (PolygonSessionException e) {
             throw new PolygonPackageUploaderException(
                     "Error happened while creating new problem %s".formatted(problemName), e);
